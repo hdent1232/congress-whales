@@ -29,6 +29,24 @@ kind of data straight from the primary public sources the aggregators repackage:
 
 ---
 
+## Download
+
+Grab the latest from **[Releases](https://github.com/hdent1232/congress-whales/releases/latest)**:
+
+| Platform | File | Install |
+|----------|------|---------|
+| **Windows** | `Congress Whales (Windows).exe` (~41 MB) | Double-click. SmartScreen may warn (unsigned) → *More info → Run anyway*. |
+| **Android** | `Congress Whales (Android).apk` (~36 MB) | Copy to your phone, tap it, allow "install from unknown sources". |
+
+Both are self-contained — no Python, no setup. The app checks GitHub for newer versions on launch and shows an in-app **Update** button when one exists. (The Android app runs the same Python engine on-device via Chaquopy inside a WebView; the APK is built automatically by GitHub Actions on every release.)
+
+## Optional: richer news (Finnhub)
+
+By default the app uses free Google News. For deeper, strictly date-ranged company
+news, get a free key at [finnhub.io/register](https://finnhub.io/register), copy
+`config.example.json` to **`config.json`**, and paste the key. `config.json` is
+git-ignored so it never ends up in the repo.
+
 ## Two ways to use it
 
 **A) Desktop app** — a standalone dashboard, no Claude needed. Two ways to launch:
