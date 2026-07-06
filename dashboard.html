@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Congress Whales</title>
+<style>
+  :root{--bg:#0a0e13;--panel:#111823;--panel2:#0d1520;--line:#1e2836;--txt:#e6edf3;
+        --mut:#8593a4;--grn:#2ecc71;--grn2:#1e7e46;--red:#ff5c5c;--red2:#7a2b2b;--acc:#39d3bb;--amber:#d99a2b;
+        --dem:#5b9bff;--rep:#ff6b6b;--ind:#b7c0cc;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  header{position:sticky;top:0;background:#0a0e13;border-bottom:1px solid var(--line);
+         padding:9px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:20}
+  h1{font-size:15px;margin:0}h1 .w{color:var(--acc)}
+  #status{font-size:11px;color:var(--mut)}.spacer{flex:1}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mut);margin-right:5px}
+  .dot.live{background:var(--grn);box-shadow:0 0 7px var(--grn)}
+  select,button,input{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px}
+  button{cursor:pointer}button.primary{background:var(--grn2);border-color:var(--grn2)}button:disabled{opacity:.5}
+  nav{display:flex;gap:2px;padding:0 12px;border-bottom:1px solid var(--line);position:sticky;top:45px;background:var(--bg);z-index:15;overflow-x:auto}
+  nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--mut);padding:9px 13px;font-size:12px;border-radius:0;white-space:nowrap}
+  nav button.active{color:#fff;border-bottom-color:var(--acc)}
+  main{padding:14px;max-width:1220px;margin:0 auto}
+  .tab{display:none}.tab.active{display:block}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .kpi .l{color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+  .kpi .v{font-size:20px;font-weight:800;margin-top:2px}.kpi .s{color:var(--mut);font-size:11px}
+  details.explain{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12px}
+  details.explain summary{cursor:pointer;padding:9px 13px;color:var(--acc);user-select:none}
+  details.explain .body{padding:0 13px 12px;color:#cdd7e2;line-height:1.55}
+  .grid2{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+  @media(min-width:820px){.grid2{grid-template-columns:1fr 1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel h2{font-size:12px;margin:0;padding:10px 13px;border-bottom:1px solid var(--line);display:flex;gap:7px;align-items:center}
+  .panel h2 .tag{font-size:10px;color:var(--mut);font-weight:400}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:7px 11px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--mut);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;user-select:none;white-space:nowrap}
+  th:hover{color:#cdd7e2}
+  tr:last-child td{border-bottom:0}tbody tr[data-tk],tbody tr[data-mem]{cursor:pointer}
+  tbody tr[data-tk]:hover,tbody tr[data-mem]:hover{background:#0f1826}
+  .tk{font-weight:700;color:#fff;border-bottom:1px dotted #40506a}
+  .pill{display:inline-block;background:#0d1622;border:1px solid var(--line);border-radius:999px;padding:0 7px;margin:1px 2px 1px 0;font-size:10px;color:var(--mut)}
+  .sec{font-size:10px;color:var(--mut);border:1px solid var(--line);border-radius:5px;padding:0 5px;white-space:nowrap}
+  .badge{font-weight:700;font-size:11px;border-radius:4px;padding:0 5px}
+  .pD{color:var(--dem);border:1px solid #2a3f66}.pR{color:var(--rep);border:1px solid #663033}.pI{color:var(--ind);border:1px solid #3a4452}.pU{color:var(--mut)}
+  .grn{color:var(--grn)}.red{color:var(--red)}.mut{color:var(--mut)}
+  .buy{color:var(--grn);font-weight:700}.sell{color:var(--red);font-weight:700}
+  .bar{height:15px;border-radius:4px;display:flex;overflow:hidden;background:#0d1520;min-width:26px}
+  .bar .b{background:var(--grn2)}.bar .s{background:var(--red2)}
+  .wk{display:flex;gap:4px;align-items:flex-end;height:74px;padding:8px 4px}
+  .wk .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%}
+  .wk .c .u{background:var(--grn2);border-radius:2px}.wk .c .d{background:var(--red2);border-radius:2px}
+  .wk .c .lb{font-size:8px;color:var(--mut);text-align:center}
+  .filters{display:flex;gap:7px;flex-wrap:wrap;padding:10px 13px;border-bottom:1px solid var(--line)}
+  .filters input{flex:1;min-width:150px}
+  .trow{display:flex;align-items:center;gap:8px;padding:6px 13px;border-bottom:1px solid var(--line);font-size:12px}
+  .trow:last-child{border-bottom:0}.up{color:var(--grn)}.dn{color:var(--red)}
+  .ins{padding:7px 13px;border-bottom:1px solid var(--line);font-size:12px;line-height:1.4}
+  .ins:last-child{border-bottom:0}.ins b{color:#fff}
+  .empty{padding:22px;color:var(--mut);text-align:center}
+  .note{font-size:11px;color:var(--mut);padding:9px 13px;background:#0f1622;border-bottom:1px solid var(--line);line-height:1.5}
+  .foot{color:var(--mut);font-size:10px;margin:16px 0;line-height:1.6}
+  #tip{position:fixed;z-index:40;max-width:300px;background:#0e1723;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;box-shadow:0 8px 24px #000a;pointer-events:none;display:none}
+  #tip .tn{font-weight:700;color:#fff}#tip .ts{color:var(--mut);font-size:11px;margin:3px 0}#tip .tsum{margin-top:5px;color:#cdd7e2;font-size:11px;line-height:1.4}
+  #scrim{position:fixed;inset:0;background:#000b;display:none;z-index:30}#scrim.open{display:block}
+  #drawer{position:fixed;top:0;right:0;width:min(480px,95vw);height:100%;background:var(--panel2);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .16s;z-index:31;overflow-y:auto}
+  #drawer.open{transform:none}
+  .dwh{padding:15px 16px 11px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel2)}
+  .dwh .x{float:right;cursor:pointer;color:var(--mut);font-size:19px}.dwb{padding:13px 16px}
+  .callout{background:#12202e;border:1px solid #24384a;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:12px}
+  .news{border-left:2px solid var(--line);padding:5px 0 5px 11px;margin-bottom:10px}
+  .news a{color:var(--txt);text-decoration:none}.news a:hover{color:var(--acc)}.news .m{font-size:10px;color:var(--mut);margin-top:2px}
+  .before{border-left-color:var(--amber)}.after{border-left-color:var(--acc)}
+  .spin{animation:sp 1s linear infinite;display:inline-block}@keyframes sp{to{transform:rotate(360deg)}}
+</style></head>
+<body>
+<header>
+  <h1>🐋 Congress <span class="w">Whales</span></h1>
+  <span id="ver" class="mut" style="font-size:10px;border:1px solid var(--line);border-radius:5px;padding:1px 5px">v…</span>
+  <a id="update" href="#" target="_blank" style="display:none;font-size:11px;color:#0b0f14;background:var(--acc);border-radius:6px;padding:3px 8px;text-decoration:none;font-weight:700"></a>
+  <span id="status"><span class="dot"></span>loading…</span>
+  <div class="spacer"></div>
+  <label class="mut" style="font-size:11px">Window
+    <select id="days">
+      <option value="7">7d</option><option value="14">14d</option><option value="30" selected>30d</option>
+      <option value="45">45d</option><option value="90">90d</option><option value="180">180d</option>
+      <option value="365">1y</option><option value="730">2y</option>
+    </select>
+  </label>
+  <button id="refresh" class="primary">↻ Refresh</button>
+</header>
+<nav id="nav">
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="buys">Buys</button><button data-tab="sells">Sells</button>
+  <button data-tab="trades">All trades</button><button data-tab="members">Members</button>
+  <button data-tab="insights">Insights</button><button data-tab="overlap">Fund overlap</button>
+</nav>
+<main>
+  <section id="tab-overview" class="tab active"></section>
+  <section id="tab-buys" class="tab"></section>
+  <section id="tab-sells" class="tab"></section>
+  <section id="tab-trades" class="tab"></section>
+  <section id="tab-members" class="tab"></section>
+  <section id="tab-insights" class="tab"></section>
+  <section id="tab-overlap" class="tab"></section>
+  <div class="foot" id="foot"></div>
+</main>
+<div id="tip"></div><div id="scrim"></div><div id="drawer"></div>
+<script>
+const $=s=>document.querySelector(s);let DATA=null,PROF={};
+const money=n=>{if(n==null||n===0)return '—';const a=Math.abs(n),s=n<0?'-':'';
+  return s+(a>=1e12?'$'+(a/1e12).toFixed(1)+'T':a>=1e9?'$'+(a/1e9).toFixed(1)+'B':a>=1e6?'$'+(a/1e6).toFixed(1)+'M':a>=1e3?'$'+(a/1e3).toFixed(0)+'K':'$'+a);};
+const rng=a=>a&&a[0]?money(a[0])+'–'+money(a[1]):'—';
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ret=v=>v==null?'<span class="mut">—</span>':'<span class="'+(v>=0?'grn':'red')+'">'+(v>=0?'+':'')+v+'%</span>';
+const px=v=>v==null?'<span class="mut">—</span>':'$'+v;
+const dISO=m=>{const p=(m||'').split('/');return p.length===3?p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0'):'';};
+const pcls=p=>({D:'pD',R:'pR',I:'pI'})[p]||'pU';
+const pbadge=p=>'<span class="badge '+pcls(p)+'">'+(p||'?')+'</span>';
+function setStatus(t,live){$('#status').innerHTML='<span class="dot '+(live?'live':'')+'"></span>'+t;}
+
+/* generic sortable table. cols: {key,label,render,val,num,cls} */
+function makeTable(host,cols,rows,opts){
+  opts=opts||{};
+  if(!host._sort)host._sort={key:opts.sortKey||null,dir:opts.dir||-1};
+  const st=host._sort;
+  function draw(){
+    let rs=rows.slice();
+    if(st.key){const c=cols.find(x=>x.key===st.key);
+      if(c)rs.sort((a,b)=>{let va=c.val?c.val(a):null,vb=c.val?c.val(b):null;
+        if(va==null)va=c.num?-Infinity:'';if(vb==null)vb=c.num?-Infinity:'';
+        return (va<vb?-1:va>vb?1:0)*st.dir;});}
+    host.innerHTML='<table><thead><tr>'+cols.map(c=>{const ar=st.key===c.key?(st.dir>0?' ▲':' ▼'):'';
+      return '<th data-k="'+c.key+'"'+(c.num?' style="text-align:right"':'')+'>'+c.label+ar+'</th>';}).join('')+'</tr></thead><tbody>'+
+      (rs.length?rs.map(r=>'<tr '+(opts.rowAttrs?opts.rowAttrs(r):'')+'>'+cols.map(c=>'<td'+(c.num?' style="text-align:right"':'')+(c.cls?' class="'+c.cls(r)+'"':'')+'>'+c.render(r)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+cols.length+'" class="empty">No rows.</td></tr>')+'</tbody></table>';
+    host.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{const k=th.getAttribute('data-k');
+      if(st.key===k)st.dir=-st.dir;else{st.key=k;st.dir=-1;}draw();});
+  }
+  draw();
+}
+
+/* hover tooltip */
+const tip=$('#tip');
+function showTip(tk,x,y){const p=PROF[tk];if(!p){tip.style.display='none';return;}
+  const idx=(p.indices||[]).map(i=>'<span class="pill">'+esc(i)+'</span>').join('');
+  const size=p.size_tier?esc(p.size_tier)+(p.market_cap?' · '+money(p.market_cap):''):'';
+  tip.innerHTML='<div class="tn">'+esc(tk)+(p.company?' · '+esc(p.company):'')+'</div>'+
+    '<div class="ts">'+esc(p.sector||'')+(p.industry?' · '+esc(p.industry):'')+'</div>'+
+    (size?'<div class="ts">'+size+'</div>':'')+(idx?'<div>'+idx+'</div>':'')+
+    (p.summary?'<div class="tsum">'+esc(p.summary.slice(0,220))+'…</div>':'');
+  tip.style.display='block';const w=tip.offsetWidth,h=tip.offsetHeight;
+  tip.style.left=Math.min(x+14,innerWidth-w-8)+'px';tip.style.top=Math.min(y+14,innerHeight-h-8)+'px';}
+document.addEventListener('mousemove',e=>{const el=e.target.closest('[data-tk]');
+  if(el)showTip(el.getAttribute('data-tk'),e.clientX,e.clientY);else tip.style.display='none';});
+
+const kpi=(l,v,s)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';
+
+/* OVERVIEW */
+function overview(d){
+  const s=d.summary,b=s.net_by_count;
+  const biasTxt=b>0?'Net BUYING':b<0?'Net SELLING':'Balanced',biasCls=b>0?'grn':b<0?'red':'mut';
+  let h='<div class="kpis">'+
+    kpi('Net bias (by # of trades)','<span class="'+biasCls+'">'+biasTxt+'</span>',s.buys+' buys · '+s.sells+' sells')+
+    kpi('Buy volume ($)','<span class="grn">'+money(s.buy_vol)+'</span>','est. midpoint')+
+    kpi('Sell volume ($)','<span class="red">'+money(s.sell_vol)+'</span>','est. midpoint')+
+    kpi('Net $ flow','<span class="'+(s.net_by_dollar>=0?'grn':'red')+'">'+money(s.net_by_dollar)+'</span>',s.unique_tickers+' tickers')+
+    kpi('Members trading',s.members,d.counts.trades+' trades')+'</div>';
+  const paradox=(b>0&&s.net_by_dollar<0)||(b<0&&s.net_by_dollar>0);
+  h+='<details class="explain"'+(paradox?' open':'')+'><summary>ℹ️ How to read "Net bias" vs "Net $ flow"'+
+    (paradox?' — why they disagree here':'')+'</summary><div class="body">'+
+    '<b>Net bias</b> counts <i>how many transactions</i> were buys vs sells ('+s.buys+' buys vs '+s.sells+' sells → '+biasTxt.toLowerCase()+'). '+
+    '<b>Net $ flow</b> compares the estimated <i>dollars</i> ('+money(s.buy_vol)+' bought vs '+money(s.sell_vol)+' sold → '+money(s.net_by_dollar)+'). '+
+    (paradox?'They disagree because members made <b>many small buys but fewer, larger sells</b> — more buy <i>tickets</i>, but more <i>money</i> leaving. ':'')+
+    'Amounts are disclosed only as ranges, so dollar figures use the range midpoint and are estimates.</div></details>';
+
+  const risers=d.momentum.filter(m=>m.delta>0).slice(0,5),fallers=d.momentum.filter(m=>m.delta<0).slice(-3).reverse();
+  const tl=m=>{const pct=m.pct==null?'':' ('+(m.pct>=0?'+':'')+m.pct+'%)';
+    return '<div class="trow"><span class="'+(m.delta>=0?'up':'dn')+'">'+(m.delta>=0?'▲':'▼')+'</span> <b>'+esc(m.sector)+'</b> '+
+    '<span class="mut">'+(m.delta>=0?'buying picked up':'buying cooled')+' — '+m.recent+' buys recently vs '+m.older+' earlier'+pct+'</span></div>';};
+  h+='<div class="grid2"><div class="panel"><h2>Sector trends <span class="tag">newer half of window vs older half</span></h2>'+
+    (risers.concat(fallers).map(tl).join('')||'<div class="empty">Not enough data.</div>')+'</div>';
+  const wk=d.weekly,mx=Math.max(1,...wk.map(w=>Math.max(w.buys,w.sells)));
+  h+='<div class="panel"><h2>Weekly activity <span class="tag">green=buys · red=sells</span></h2><div class="wk">'+
+    wk.map(w=>'<div class="c"><div class="u" style="height:'+(w.buys/mx*100)+'%" title="'+w.buys+' buys"></div><div class="d" style="height:'+(w.sells/mx*100)+'%" title="'+w.sells+' sells"></div><div class="lb">'+w.week.slice(5)+'</div></div>').join('')+'</div></div></div>';
+
+  h+='<div class="grid2"><div class="panel"><h2>💡 Biggest "copyable" winners <span class="tag">return since it went public</span></h2>'+
+    (d.insights.top_trades.slice(0,5).map(t=>'<div class="ins">'+pbadge(t.party)+' <b>'+esc(t.member)+'</b> bought <span class="tk" data-tk="'+esc(t.ticker)+'">'+esc(t.ticker)+'</span> — <span class="grn">+'+t.cret+'%</span> since disclosed <span class="mut">('+esc(t.filing_date)+')</span></div>').join('')||'<div class="empty">—</div>')+'</div>';
+  h+='<div class="panel"><h2>Republicans vs Democrats <span class="tag">avg copyable return</span></h2><table><thead><tr><th>Party</th><th>Members</th><th>Buys</th><th>Sells</th><th>Avg copy return</th></tr></thead><tbody>'+
+    d.insights.by_party.map(p=>'<tr><td>'+pbadge(p.party)+'</td><td>'+p.members+'</td><td class="grn">'+p.buys+'</td><td class="red">'+p.sells+'</td><td>'+ret(p.avg_copy_return)+'</td></tr>').join('')+'</tbody></table></div></div>';
+
+  h+='<div class="grid2"><div id="ov-sector" class="panel"><h2>By sector</h2></div><div id="ov-members" class="panel"><h2>Most active members <span class="tag">click for portfolio</span></h2><div class="host"></div></div></div>';
+  $('#tab-overview').innerHTML=h;
+
+  const mxs=Math.max(1,...d.by_sector.map(x=>x.buys+x.sells));
+  makeTable($('#ov-sector'),[
+    {key:'sector',label:'Sector',render:r=>esc(r.sector),val:r=>r.sector},
+    {key:'mix',label:'Buys vs sells',render:r=>'<div class="bar" style="width:'+((r.buys+r.sells)/mxs*100)+'%"><div class="b" style="flex:'+r.buys+'"></div><div class="s" style="flex:'+r.sells+'"></div></div>',val:r=>r.buys+r.sells},
+    {key:'buys',label:'Buys',num:true,render:r=>'<span class="grn">'+r.buys+'</span>',val:r=>r.buys},
+    {key:'sells',label:'Sells',num:true,render:r=>'<span class="red">'+r.sells+'</span>',val:r=>r.sells},
+  ],d.by_sector,{sortKey:'mix'});
+  makeTable($('#ov-members .host'),memberCols(true),[...d.members].sort((a,b)=>b.trades-a.trades).slice(0,8),
+    {sortKey:'trades',rowAttrs:r=>'data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'"'});
+}
+
+function memberCols(compact){const c=[
+  {key:'member',label:'Member',render:r=>esc(r.member),val:r=>r.member},
+  {key:'party',label:'Party',render:r=>pbadge(r.party),val:r=>r.party},
+  {key:'chamber',label:'Ch.',render:r=>'<span class="mut">'+esc((r.chamber||'')[0]||'')+'</span>',val:r=>r.chamber},
+  {key:'buys',label:'Buys',num:true,render:r=>'<span class="grn">'+r.buys+'</span>',val:r=>r.buys},
+  {key:'sells',label:'Sells',num:true,render:r=>'<span class="red">'+r.sells+'</span>',val:r=>r.sells}];
+  if(!compact)c.push(
+    {key:'tickers',label:'Tickers',num:true,render:r=>r.tickers,val:r=>r.tickers},
+    {key:'sector',label:'Top sector',render:r=>'<span class="sec">'+esc(r.top_sector||'—')+'</span>',val:r=>r.top_sector},
+    {key:'buyvol',label:'Buy $vol',num:true,render:r=>'<span class="mut">'+money(r.buy_vol)+'</span>',val:r=>r.buy_vol});
+  c.push(
+    {key:'est',label:'Est.ret',num:true,render:r=>ret(r.est_return),val:r=>r.est_return},
+    {key:'copy',label:'Copy ret',num:true,render:r=>ret(r.copy_return),val:r=>r.copy_return});
+  return c;}
+
+/* BUYS / SELLS */
+function leaderCols(kind){return [
+  {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
+  {key:'sector',label:'Sector',render:r=>'<span class="sec">'+esc(r.sector||'—')+'</span>',val:r=>r.sector},
+  {key:'members',label:'Members',render:r=>'<span class="'+kind+'">'+r.distinct_members+'</span> <span class="mut">'+esc(r.members.slice(0,2).join(', '))+(r.members.length>2?' +'+(r.members.length-2):'')+'</span>',val:r=>r.distinct_members},
+  {key:'n',label:'#',num:true,render:r=>r.transactions,val:r=>r.transactions},
+  {key:'est',label:'Est $',num:true,render:r=>'<span class="mut">'+rng(r.est_amount_usd)+'</span>',val:r=>(r.est_amount_usd&&r.est_amount_usd[1])||0},
+  {key:'price',label:'Price',num:true,render:r=>px(r.price),val:r=>r.price},
+  {key:'ret',label:'Ret.since',num:true,render:r=>ret(r.return_since_pct),val:r=>r.return_since_pct},
+];}
+function buildLeader(tab,rows,kind){
+  const secs=[...new Set(rows.map(r=>r.sector).filter(Boolean))].sort();
+  $(tab).innerHTML='<div class="panel"><div class="filters"><input placeholder="Filter ticker / member…" data-f="q">'+
+    '<select data-f="sector"><option value="">All sectors</option>'+secs.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select>'+
+    '<span class="mut" style="align-self:center;font-size:11px">click a column to sort · click a row for details</span></div><div class="host"></div></div>';
+  const host=$(tab+' .host');
+  const render=()=>{const q=($(tab+' [data-f=q]').value||'').toUpperCase(),sc=$(tab+' [data-f=sector]').value;
+    makeTable(host,leaderCols(kind),rows.filter(r=>(!sc||r.sector===sc)&&(!q||r.ticker.includes(q)||r.members.some(m=>m.toUpperCase().includes(q)))),
+      {sortKey:'members',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date=""'});};
+  $(tab).querySelectorAll('[data-f]').forEach(e=>e.oninput=render);render();
+}
+
+/* ALL TRADES */
+function buildTrades(d){
+  $('#tab-trades').innerHTML='<div class="panel"><div class="filters">'+
+    '<input placeholder="Filter ticker / member…" data-f="q">'+
+    '<select data-f="action"><option value="">Buys & sells</option><option value="purchase">Buys</option><option value="sale">Sells</option></select>'+
+    '<select data-f="sector"><option value="">All sectors</option>'+d.sectors.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select>'+
+    '<select data-f="chamber"><option value="">Both</option><option>House</option><option>Senate</option></select>'+
+    '<select data-f="party"><option value="">All parties</option><option value="D">Democrat</option><option value="R">Republican</option><option value="I">Independent</option></select></div><div class="host"></div></div>';
+  const cols=[
+    {key:'filing_date',label:'Filed',render:r=>'<span class="mut">'+esc(r.filing_date)+'</span>',val:r=>r.filing_date},
+    {key:'txn',label:'Traded',render:r=>'<span class="mut">'+esc(r.txn_date)+'</span>',val:r=>dISO(r.txn_date)},
+    {key:'chamber',label:'Ch.',render:r=>'<span class="mut">'+esc((r.chamber||'')[0])+'</span>',val:r=>r.chamber},
+    {key:'member',label:'Member',render:r=>esc(r.member),val:r=>r.member},
+    {key:'party',label:'Party',render:r=>pbadge(r.party),val:r=>r.party},
+    {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
+    {key:'sector',label:'Sector',render:r=>'<span class="sec">'+esc(r.sector)+'</span>',val:r=>r.sector},
+    {key:'action',label:'Action',render:r=>'<span class="'+(r.action==='purchase'?'buy':'sell')+'">'+(r.action==='purchase'?'BUY':'SELL')+'</span>',val:r=>r.action},
+    {key:'amt',label:'Amount',num:true,render:r=>'<span class="mut">'+rng([r.amount_min,r.amount_max])+'</span>',val:r=>r.amount_max||0},
+    {key:'ret',label:'Ret.(trade)',num:true,render:r=>ret(r.ret),val:r=>r.ret},
+    {key:'cret',label:'Ret.(public)',num:true,render:r=>ret(r.cret),val:r=>r.cret},
+  ];
+  const host=$('#tab-trades .host');
+  const render=()=>{const q=($('#tab-trades [data-f=q]').value||'').toUpperCase(),ac=$('#tab-trades [data-f=action]').value,
+    sc=$('#tab-trades [data-f=sector]').value,ch=$('#tab-trades [data-f=chamber]').value,pt=$('#tab-trades [data-f=party]').value;
+    makeTable(host,cols,d.trades.filter(r=>(!ac||r.action===ac)&&(!sc||r.sector===sc)&&(!ch||r.chamber===ch)&&(!pt||r.party===pt)&&(!q||r.ticker.includes(q)||r.member.toUpperCase().includes(q))),
+      {sortKey:'filing_date',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date="'+dISO(r.txn_date)+'"'});};
+  $('#tab-trades').querySelectorAll('[data-f]').forEach(e=>e.oninput=render);render();
+}
+
+/* MEMBERS */
+function buildMembers(d){
+  $('#tab-members').innerHTML='<div class="panel"><div class="note">Rankings come from disclosed <b>transactions</b>. '+
+    '<b>Est.ret</b> = avg mark-to-market return since each disclosed buy (the member\'s own timing). '+
+    '<b>Copy ret</b> = avg return since the trade became <i>public</i> (what you could realistically mirror). '+
+    'Realized profit &amp; net worth are <b>not shown</b> — filings give only dollar ranges, no share counts. Click a column to sort, a row for the full portfolio.</div>'+
+    '<div class="filters"><input placeholder="Search a member…" data-f="q">'+
+    '<select data-f="party"><option value="">All parties</option><option value="D">Democrat</option><option value="R">Republican</option><option value="I">Independent</option></select></div><div class="host"></div></div>';
+  const host=$('#tab-members .host');
+  const render=()=>{const q=($('#tab-members [data-f=q]').value||'').toUpperCase(),pt=$('#tab-members [data-f=party]').value;
+    makeTable(host,memberCols(false),d.members.filter(m=>(!pt||m.party===pt)&&(!q||m.member.toUpperCase().includes(q))),
+      {sortKey:'trades',rowAttrs:r=>'data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'"'});};
+  $('#tab-members').querySelectorAll('[data-f]').forEach(e=>e.oninput=render);render();
+}
+
+/* INSIGHTS */
+function buildInsights(d){
+  const ins=d.insights;
+  let h='<div class="panel"><div class="note">These are <b>ideas, not advice.</b> "Copyable" return is measured from the date each trade became <b>public</b> '+
+    '(members can file up to ~45 days after trading), so it reflects what an ordinary person could have done <i>after</i> seeing the disclosure — not the member\'s own entry price.</div></div>';
+  h+='<div class="grid2"><div class="panel"><h2>🏆 Who to copy <span class="tag">best avg return since disclosure · ≥5 buys</span></h2><div id="ins-copy" class="host"></div></div>';
+  h+='<div class="panel"><h2>💡 Biggest copyable winners <span class="tag">single disclosed buys</span></h2><div id="ins-top" class="host"></div></div></div>';
+  $('#tab-insights').innerHTML=h;
+  makeTable($('#ins-copy'),[
+    {key:'member',label:'Member',render:r=>esc(r.member),val:r=>r.member},
+    {key:'party',label:'Party',render:r=>pbadge(r.party),val:r=>r.party},
+    {key:'buys',label:'Buys',num:true,render:r=>r.copy_samples,val:r=>r.copy_samples},
+    {key:'copy',label:'Copy return',num:true,render:r=>ret(r.copy_return),val:r=>r.copy_return},
+  ],ins.copy_leaders,{sortKey:'copy',rowAttrs:r=>'data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'"'});
+  makeTable($('#ins-top'),[
+    {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
+    {key:'member',label:'Member',render:r=>pbadge(r.party)+' '+esc(r.member),val:r=>r.member},
+    {key:'filed',label:'Disclosed',render:r=>'<span class="mut">'+esc(r.filing_date)+'</span>',val:r=>r.filing_date},
+    {key:'cret',label:'Since public',num:true,render:r=>ret(r.cret),val:r=>r.cret},
+    {key:'ret',label:'Since trade',num:true,render:r=>ret(r.ret),val:r=>r.ret},
+  ],ins.top_trades,{sortKey:'cret',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date="'+dISO(r.txn_date)+'"'});
+}
+
+/* OVERLAP */
+function buildOverlap(d){
+  $('#tab-overlap').innerHTML='<div class="panel"><h2>Congress ∩ Big funds <span class="tag">bought by Congress AND held in latest 13F</span></h2><div class="host"></div></div>';
+  makeTable($('#tab-overlap .host'),[
+    {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
+    {key:'company',label:'Company',render:r=>'<span class="mut">'+esc((r.company||'').slice(0,22))+'</span>',val:r=>r.company},
+    {key:'sector',label:'Sector',render:r=>'<span class="sec">'+esc(r.sector||'—')+'</span>',val:r=>r.sector},
+    {key:'funds',label:'Funds',num:true,render:r=>'<span class="grn">'+r.fund_count+'</span> '+r.funds_holding.slice(0,3).map(f=>'<span class="pill">'+esc(f)+'</span>').join('')+(r.fund_count>3?'+'+(r.fund_count-3):''),val:r=>r.fund_count},
+    {key:'cong',label:'In Congress',num:true,render:r=>'<span class="mut">'+r.congress_members+'</span>',val:r=>r.congress_members},
+    {key:'price',label:'Price',num:true,render:r=>px(r.price),val:r=>r.price},
+    {key:'ret',label:'Ret.',num:true,render:r=>ret(r.return_since_pct),val:r=>r.return_since_pct},
+  ],d.overlap,{sortKey:'funds',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date=""'});
+}
+
+/* DRAWERS */
+function closeDrawer(){$('#scrim').classList.remove('open');$('#drawer').classList.remove('open');}
+$('#scrim').onclick=closeDrawer;
+async function openTicker(tk,date){
+  $('#scrim').classList.add('open');$('#drawer').classList.add('open');
+  $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span><div class="tk" style="font-size:18px">'+esc(tk)+'</div><div class="mut"><span class="spin">↻</span> loading…</div></div>';
+  try{const d=await(await fetch('/api/ticker?ticker='+encodeURIComponent(tk)+(date?'&date='+date:''))).json();
+    const p=d.price||{},pr=d.profile||{},mv=d.biggest_move;
+    const idx=(pr.indices||[]).map(i=>'<span class="pill">'+esc(i)+'</span>').join('');
+    const news=(d.news||[]).map(n=>{const tag=n.days_from_trade==null?'':(n.days_from_trade<0?'before':'after');
+      const rel=n.days_from_trade==null?'':' · '+(n.days_from_trade===0?'day of trade':Math.abs(n.days_from_trade)+'d '+(n.days_from_trade<0?'before':'after'));
+      return '<div class="news '+tag+'"><a href="'+esc(n.url)+'" target="_blank">'+esc(n.headline)+'</a><div class="m">'+esc(n.date)+rel+(n.source?' · '+esc(n.source):'')+'</div></div>';}).join('')||'<div class="mut">No recent headlines.</div>';
+    const moveHtml=mv?'<div class="callout">📈 Biggest price move near the trade: <b class="'+(mv.pct>=0?'grn':'red')+'">'+(mv.pct>=0?'+':'')+mv.pct+'%</b> on '+esc(mv.date)+' <span class="mut">('+(mv.days_from_trade===0?'day of trade':Math.abs(mv.days_from_trade)+'d '+(mv.days_from_trade<0?'before':'after')+' the trade')+')</span></div>':'';
+    $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span>'+
+      '<div class="tk" style="font-size:18px">'+esc(tk)+' <span class="mut" style="font-size:12px;font-weight:400">'+esc(pr.company||'')+'</span></div>'+
+      '<div style="margin-top:6px">'+px(p.price)+' <span style="margin-left:6px">'+ret(p.return_since_pct)+'</span>'+(p.price_on_date?'<span class="mut" style="font-size:11px"> since trade @ $'+p.price_on_date+'</span>':'')+'</div>'+
+      '<div class="mut" style="margin-top:5px;font-size:11px">'+esc(pr.sector||'')+(pr.industry?' · '+esc(pr.industry):'')+(pr.size_tier?' · '+esc(pr.size_tier)+(pr.market_cap?' '+money(pr.market_cap):''):'')+(pr.founded?' · est. '+esc(pr.founded):'')+'</div>'+
+      (idx?'<div style="margin-top:5px">'+idx+'</div>':'')+'</div>'+
+      '<div class="dwb">'+moveHtml+(pr.summary?'<div style="font-size:12px;line-height:1.5;margin-bottom:12px">'+esc(pr.summary)+'</div>':'')+
+      '<h2 style="font-size:12px;margin:0 0 8px">📰 News around the trade</h2>'+news+
+      '<div class="foot">Price move from daily history; headlines via Google News aligned to the trade date (amber=before, teal=after). Not curated data.</div></div>';
+  }catch(e){$('#drawer').innerHTML+='<div class="dwb red">error: '+e+'</div>';}
+}
+async function openMember(name,ch){
+  $('#scrim').classList.add('open');$('#drawer').classList.add('open');
+  $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span><div class="tk" style="font-size:17px">'+esc(name)+'</div><div class="mut"><span class="spin">↻</span> building portfolio…</div></div>';
+  try{const d=await(await fetch('/api/member?name='+encodeURIComponent(name)+'&chamber='+encodeURIComponent(ch)+'&days='+$('#days').value)).json();
+    $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span>'+
+      '<div class="tk" style="font-size:17px">'+esc(name)+' '+pbadge(d.party)+' <span class="mut" style="font-size:12px;font-weight:400">'+esc(ch)+(d.state?' · '+esc(d.state):'')+'</span></div>'+
+      '<div class="mut" style="margin-top:6px;font-size:12px">'+d.totals.tickers+' tickers · '+d.totals.buys+' buys · '+d.totals.sells+' sells · est. return '+(d.est_return==null?'—':(d.est_return>=0?'+':'')+d.est_return+'%')+'</div></div>'+
+      '<div class="dwb"><div class="note" style="margin:-13px -16px 12px;border-radius:0">Disclosed <b>trading activity</b> for this window, not a verified live portfolio. "Accumulating/Reducing" = buys vs sells in the window; share counts &amp; cost basis aren\'t disclosed (only ranges).</div><div id="mpos"></div></div>';
+    makeTable($('#mpos'),[
+      {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
+      {key:'net',label:'Activity',render:r=>'<span class="'+(r.net==='Accumulating'?'buy':r.net==='Reducing'?'sell':'mut')+'">'+esc(r.net)+'</span>',val:r=>r.net},
+      {key:'trades',label:'Trades',num:true,render:r=>'<span class="mut">'+r.buys+'B/'+r.sells+'S</span>',val:r=>r.buys+r.sells},
+      {key:'net_usd',label:'Net $',num:true,render:r=>'<span class="mut">'+money(r.net_usd)+'</span>',val:r=>r.net_usd},
+      {key:'price',label:'Price',num:true,render:r=>px(r.price),val:r=>r.price},
+      {key:'ret',label:'Ret.since',num:true,render:r=>ret(r.return_since_pct),val:r=>r.return_since_pct},
+    ],d.positions,{sortKey:'net_usd',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date="'+dISO(r.last)+'"'});
+  }catch(e){$('#drawer').innerHTML+='<div class="dwb red">error: '+e+'</div>';}
+}
+document.addEventListener('click',e=>{
+  const mem=e.target.closest('[data-mem]');if(mem){openMember(mem.getAttribute('data-mem'),mem.getAttribute('data-ch'));return;}
+  const tr=e.target.closest('[data-tk]');if(tr&&(tr.tagName==='TR'||tr.classList.contains('tk')))openTicker(tr.getAttribute('data-tk'),tr.getAttribute('data-date')||'');});
+
+/* render + nav + load */
+function render(d){
+  DATA=d;PROF=Object.assign({},d.basic||{},d.profiles||{});
+  overview(d);buildLeader('#tab-buys',d.buys,'buy');buildLeader('#tab-sells',d.sells,'sell');
+  buildTrades(d);buildMembers(d);buildInsights(d);buildOverlap(d);
+  setStatus('Updated '+new Date(d.generated_at).toLocaleString()+' · '+d.counts.buys+' buys · '+d.counts.sells+' sells',true);
+  $('#foot').innerHTML='Sources: House Clerk PTRs · Senate EFD · SEC EDGAR (13F, sector, shares) · congress-legislators (party) · S&P 500 · Yahoo (prices) · Wikipedia · Google News. '+
+    'Free public data. Congress (House+Senate) is the only body with a clean transaction-level feed; executive-branch &amp; judicial officials file only annual holdings (ranges), so they aren\'t included. Index membership is a static snapshot. Not financial advice.';
+}
+$('#nav').onclick=e=>{const b=e.target.closest('button[data-tab]');if(!b)return;
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');$('#tab-'+b.dataset.tab).classList.add('active');};
+async function load(refresh){$('#refresh').disabled=true;
+  setStatus('<span class="spin">↻</span> fetching filings, prices, sectors & profiles…',false);
+  try{const d=await(await fetch('/api/data?days='+$('#days').value+'&refresh='+(refresh?1:0))).json();
+    if(d.error)setStatus('error: '+d.error,false);else render(d);}catch(e){setStatus('error: '+e,false);}
+  $('#refresh').disabled=false;}
+async function checkVersion(){
+  try{const v=await(await fetch('/api/version')).json();
+    $('#ver').textContent='v'+v.current;
+    if(v.update_available){const a=$('#update');a.style.display='inline-block';
+      a.href=v.url;a.textContent='⬆ Update to v'+v.latest;}
+  }catch(e){$('#ver').textContent='v?';}
+}
+(async function(){await load(false);load(true);checkVersion();})();
+$('#refresh').onclick=()=>load(true);$('#days').onchange=()=>load(false);
+</script>
+</body></html>

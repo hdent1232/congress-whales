@@ -1,0 +1,24 @@
+# Secrets & machine-specific config (never commit)
+config.json
+.mcp.json
+
+# Build output & caches
+.cache/
+dist/
+build/
+*.spec
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Android build output
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+*.apk
+
+# OS cruft
+Thumbs.db
+.DS_Store

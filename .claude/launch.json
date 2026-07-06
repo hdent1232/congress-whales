@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "congress-whales",
+      "runtimeExecutable": "C:\\Users\\flami\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": ["C:\\Users\\flami\\Desktop\\congress-whales-mcp\\app.py"],
+      "port": 8787
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+pypdf>=4.0          # read House PTR disclosure PDFs
+pywebview>=5        # native desktop window (falls back to your browser if missing)
+plyer>=2.1          # desktop notifications for new filings
+mcp>=1.2            # only needed for the optional Claude/MCP integration (server.py)
+# pyinstaller       # build-only: create the shareable .exe (see build_exe.bat)
+# pillow            # only needed to regenerate appicon.ico

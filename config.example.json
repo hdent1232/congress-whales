@@ -1,0 +1,4 @@
+{
+  "_comment": "Copy this file to config.json (which is git-ignored) and paste your key. Get a free key at https://finnhub.io/register . Without it, the app uses free Google News instead.",
+  "FINNHUB_API_KEY": ""
+}

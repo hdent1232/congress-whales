@@ -1,0 +1,9 @@
+{
+  "_comment": "OPTIONAL — only needed to query the data from Claude as an MCP tool (see README). Replace the paths with where you cloned this repo and your Python. Config location on Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
+  "mcpServers": {
+    "congress-whales": {
+      "command": "C:\\path\\to\\python.exe",
+      "args": ["C:\\path\\to\\congress-whales\\server.py"]
+    }
+  }
+}
