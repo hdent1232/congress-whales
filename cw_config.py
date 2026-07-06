@@ -38,3 +38,30 @@ def get(key: str, default=None):
         return v
     v = _load().get(key)
     return v if v not in (None, "") else default
+
+
+def config_path() -> str:
+    """Where config.json is written (matches the first location get() reads)."""
+    base = os.environ.get("CW_CACHE_DIR") or os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, "config.json")
+
+
+def set_value(key: str, value: str) -> None:
+    """Persist (or clear, if value is falsy) a config value to config.json."""
+    global _cfg
+    p = config_path()
+    data = {}
+    if os.path.exists(p):
+        try:
+            with open(p, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except Exception:
+            data = {}
+    if value:
+        data[key] = value
+    else:
+        data.pop(key, None)
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+    _cfg = None  # force reload on next get()

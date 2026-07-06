@@ -89,6 +89,7 @@
     </select>
   </label>
   <button id="refresh" class="primary">↻ Refresh</button>
+  <button id="settings" title="Settings">⚙</button>
 </header>
 <nav id="nav">
   <button data-tab="overview" class="active">Overview</button>
@@ -365,6 +366,30 @@ async function openMember(name,ch){
 document.addEventListener('click',e=>{
   const mem=e.target.closest('[data-mem]');if(mem){openMember(mem.getAttribute('data-mem'),mem.getAttribute('data-ch'));return;}
   const tr=e.target.closest('[data-tk]');if(tr&&(tr.tagName==='TR'||tr.classList.contains('tk')))openTicker(tr.getAttribute('data-tk'),tr.getAttribute('data-date')||'');});
+
+/* settings drawer (Finnhub API key) */
+async function openSettings(){
+  $('#scrim').classList.add('open');$('#drawer').classList.add('open');
+  let set=false;try{set=(await(await fetch('/api/config')).json()).finnhub_set;}catch(e){}
+  $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span>'+
+    '<div class="tk" style="font-size:17px">⚙ Settings</div></div><div class="dwb">'+
+    '<h2 style="font-size:13px;margin:0 0 8px">Finnhub API key <span class="mut" style="font-weight:400">(optional)</span></h2>'+
+    '<div class="mut" style="font-size:12px;line-height:1.5;margin-bottom:10px">Adds deeper, date-ranged company news. Without it the app uses free Google News. '+
+    'Get a free key at <a href="https://finnhub.io/register" target="_blank" style="color:var(--acc)">finnhub.io</a>. '+
+    'Your key is stored only on this device (in a local config file) and is never sent anywhere except Finnhub.</div>'+
+    '<div style="margin-bottom:8px" class="'+(set?'grn':'mut')+'" id="cfgstatus">'+(set?'✓ A key is currently saved.':'No key saved — using Google News.')+'</div>'+
+    '<input id="fkey" type="password" placeholder="Paste your Finnhub key…" style="width:100%;margin-bottom:8px" autocomplete="off">'+
+    '<div style="display:flex;gap:8px"><button id="fsave" class="primary">Save</button>'+
+    (set?'<button id="fclear">Remove key</button>':'')+'</div>'+
+    '<div id="fmsg" class="mut" style="font-size:12px;margin-top:10px"></div></div>';
+  $('#fsave').onclick=async()=>{const k=$('#fkey').value.trim();
+    $('#fmsg').textContent='Saving…';
+    try{const r=await(await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({finnhub_key:k})})).json();
+      $('#fmsg').innerHTML=r.finnhub_set?'<span class="grn">✓ Saved. Finnhub news is now active.</span>':'<span class="mut">Key cleared.</span>';
+      $('#fkey').value='';}catch(e){$('#fmsg').innerHTML='<span class="red">Error: '+e+'</span>';}};
+  const fc=$('#fclear');if(fc)fc.onclick=async()=>{await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({finnhub_key:''})});openSettings();};
+}
+$('#settings').onclick=openSettings;
 
 /* render + nav + load */
 function render(d){

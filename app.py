@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
+import cw_config
 import cw_congress
 import cw_institutions
 import cw_members
@@ -362,6 +363,24 @@ class Handler(BaseHTTPRequestHandler):
                                          int(q.get("days", ["30"])[0])))
             elif u.path == "/api/version":
                 self._json(version_info())
+            elif u.path == "/api/config":
+                # Never returns the key itself — only whether one is set.
+                self._json({"finnhub_set": bool(cw_config.get("FINNHUB_API_KEY"))})
+            else:
+                self.send_response(404)
+                self.end_headers()
+        except Exception as e:
+            self._json({"error": str(e)}, 500)
+
+    def do_POST(self):
+        u = urlparse(self.path)
+        try:
+            if u.path == "/api/config":
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                data = json.loads(self.rfile.read(length) or b"{}") if length else {}
+                key = (data.get("finnhub_key") or "").strip()
+                cw_config.set_value("FINNHUB_API_KEY", key)
+                self._json({"ok": True, "finnhub_set": bool(key)})
             else:
                 self.send_response(404)
                 self.end_headers()

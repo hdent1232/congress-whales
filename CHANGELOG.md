@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.5
+- **In-app settings (⚙):** add or remove your optional Finnhub API key right in the app — no file editing. The key is stored only on your device and never displayed back.
+
 ## 1.0.4
 - **Members & party:** political party (R/D/I) on every member and trade, party filter, and a Republicans-vs-Democrats comparison.
 - **Insights tab:** "who to copy" (members ranked by return *since their trades became public*) and the biggest copyable single trades.
