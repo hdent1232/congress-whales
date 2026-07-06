@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.chaquo.python'
+}
+
+android {
+    namespace 'com.congresswhales'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.congresswhales"
+        minSdk 24
+        targetSdk 34
+        versionCode 104
+        versionName "1.0.4"
+        ndk {
+            abiFilters "arm64-v8a", "x86_64"
+        }
+        python {
+            version "3.11"
+            pip {
+                install "pypdf"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:1.7.0"
+}

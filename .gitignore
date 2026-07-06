@@ -22,3 +22,6 @@ android/local.properties
 # OS cruft
 Thumbs.db
 .DS_Store
+
+# generated from dashboard.html
+page_data.py

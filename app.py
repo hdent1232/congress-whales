@@ -376,8 +376,17 @@ def make_server(port: int | None = None) -> ThreadingHTTPServer:
 def _load_page():
     import sys
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(base, "dashboard.html"), encoding="utf-8") as fh:
-        return fh.read()
+    p = os.path.join(base, "dashboard.html")
+    if os.path.exists(p):
+        with open(p, encoding="utf-8") as fh:
+            return fh.read()
+    # Android (Chaquopy) build can't open loose data files — fall back to a
+    # generated Python module (see tools/gen_page_data.py).
+    try:
+        from page_data import PAGE as _P
+        return _P
+    except Exception:
+        return "<h1>dashboard.html missing</h1>"
 
 
 PAGE = _load_page()
