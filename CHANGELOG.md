@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6
+- **Android fix:** the app no longer hangs on "loading." It now ships with a starter snapshot so it opens instantly with real data, then refreshes live.
+- **Resilience:** a single blocked/slow data source (e.g. an SEC 403) can no longer blank the whole dashboard — it degrades gracefully and keeps showing data.
+- Proper email-format User-Agent so SEC doesn't reject requests; friendlier "showing saved data" status when offline.
+
 ## 1.0.5
 - **In-app settings (⚙):** add or remove your optional Finnhub API key right in the app — no file editing. The key is stored only on your device and never displayed back.
 
