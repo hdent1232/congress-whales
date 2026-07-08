@@ -17,7 +17,7 @@ import threading
 if getattr(sys, "frozen", False):
     _base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
     os.environ.setdefault("CW_CACHE_DIR", os.path.join(_base, "CongressWhales"))
-os.environ.setdefault("CW_CONTACT_EMAIL", "congress-whales-desktop-app")
+os.environ.setdefault("CW_CONTACT_EMAIL", "congress-whales@users.noreply.github.com")
 
 import app  # noqa: E402  (imported after env defaults are set)
 

@@ -22,10 +22,12 @@ jobs:
       - name: Stage Python sources
         run: |
           python tools/gen_page_data.py
+          python tools/gen_starter.py
           dest=android/app/src/main/python
           mkdir -p "$dest"
           cp app.py cw_config.py cw_http.py cw_congress.py cw_institutions.py \
-             cw_members.py cw_meta.py cw_news.py cw_prices.py version.py page_data.py "$dest"/
+             cw_members.py cw_meta.py cw_news.py cw_prices.py version.py \
+             page_data.py starter_data.py "$dest"/
 
       - uses: gradle/actions/setup-gradle@v4
         with:

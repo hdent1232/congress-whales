@@ -73,8 +73,11 @@ def compute(days: int = 30, top: int = 40) -> dict:
     all_tickers = list(dict.fromkeys(t["ticker"] for t in stock))[:250]
 
     def warm(tk):
-        info = dict(cw_meta.get_sector_industry(tk))
-        info.update(cw_prices.get_price_info(tk, last_date.get(tk)))  # warms history cache
+        try:
+            info = dict(cw_meta.get_sector_industry(tk))
+            info.update(cw_prices.get_price_info(tk, last_date.get(tk)))  # warms history cache
+        except Exception:
+            info = {"sector": "Other", "industry": None, "sic": None}
         return tk, info
 
     enriched: dict[str, dict] = {}
@@ -103,7 +106,10 @@ def compute(days: int = 30, top: int = 40) -> dict:
     shown = list(dict.fromkeys([r["ticker"] for r in buys] + [r["ticker"] for r in sells]))[:60]
 
     def prof(tk):
-        return tk, cw_meta.get_ticker_profile(tk, price=enriched.get(tk, {}).get("price"))
+        try:
+            return tk, cw_meta.get_ticker_profile(tk, price=enriched.get(tk, {}).get("price"))
+        except Exception:
+            return tk, {"ticker": tk, "sector": enriched.get(tk, {}).get("sector")}
 
     profiles: dict[str, dict] = {}
     with ThreadPoolExecutor(max_workers=8) as ex:

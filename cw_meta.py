@@ -77,11 +77,17 @@ _meta_cache: dict[str, dict] = {}
 
 def _load_company_tickers() -> None:
     global _ticker_cik, _ticker_name
-    data = fetch_json("https://www.sec.gov/files/company_tickers.json",
-                      ttl=604800, rate_key="sec")
-    _ticker_cik = {r["ticker"].upper(): str(r["cik_str"]).zfill(10)
-                   for r in data.values()}
-    _ticker_name = {r["ticker"].upper(): r["title"].title() for r in data.values()}
+    try:
+        data = fetch_json("https://www.sec.gov/files/company_tickers.json",
+                          ttl=604800, rate_key="sec")
+        _ticker_cik = {r["ticker"].upper(): str(r["cik_str"]).zfill(10)
+                       for r in data.values()}
+        _ticker_name = {r["ticker"].upper(): r["title"].title() for r in data.values()}
+    except Exception:
+        # SEC unreachable/blocked (e.g. datacenter IP 403) — degrade gracefully
+        # instead of taking the whole dashboard down.
+        _ticker_cik = _ticker_cik or {}
+        _ticker_name = _ticker_name or {}
 
 
 def _ticker_to_cik(ticker: str) -> str | None:

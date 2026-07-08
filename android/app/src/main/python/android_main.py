@@ -26,7 +26,21 @@ def start(cache_dir: str = "") -> int:
     # Must be set BEFORE importing app (cache paths are read at import time).
     if cache_dir:
         os.environ["CW_CACHE_DIR"] = cache_dir
-    os.environ.setdefault("CW_CONTACT_EMAIL", "congress-whales-android")
+    # SEC/House require a contact in the User-Agent; use an email-format value.
+    os.environ.setdefault("CW_CONTACT_EMAIL", "congress-whales@users.noreply.github.com")
+
+    # Seed a bundled starter snapshot so the app opens instantly with real data,
+    # even before (or if) the first live refresh completes.
+    try:
+        cache = os.path.join(os.environ.get("CW_CACHE_DIR", ""), ".cache")
+        os.makedirs(cache, exist_ok=True)
+        target = os.path.join(cache, "dash_30.json")
+        if not os.path.exists(target):
+            import starter_data
+            with open(target, "w", encoding="utf-8") as fh:
+                fh.write(starter_data.SNAPSHOT30)
+    except Exception:
+        pass
 
     import app  # noqa: E402
 
