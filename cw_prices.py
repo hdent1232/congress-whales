@@ -60,6 +60,18 @@ def return_since(ticker: str, since_iso: str | None) -> dict:
     return out
 
 
+def price_on(ticker: str, iso: str | None) -> float | None:
+    """Close on/just before a given date, from cached history (for equity curves)."""
+    if not iso:
+        return None
+    try:
+        target = dt.date.fromisoformat(iso)
+    except ValueError:
+        return None
+    prior = [c for d, c in _history(ticker)["series"] if d <= target]
+    return prior[-1] if prior else None
+
+
 def biggest_move(ticker: str, around_iso: str | None, window_days: int = 12) -> dict | None:
     """Largest single-day % move within +/- window_days of a trade date.
 

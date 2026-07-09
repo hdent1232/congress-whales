@@ -153,7 +153,8 @@ def compute(days: int = 30, top: int = 40) -> dict:
         mk = (t["member"], t["chamber"])
         m = members.setdefault(mk, {"member": t["member"], "chamber": t["chamber"],
                                     "buys": 0, "sells": 0, "buy_vol": 0, "sell_vol": 0,
-                                    "tickers": set(), "sectors": Counter(), "rets": [], "crets": []})
+                                    "tickers": set(), "sectors": Counter(), "rets": [],
+                                    "crets": [], "lags": []})
         m["tickers"].add(t["ticker"])
         m["sectors"][sec] += 1
         m["buy_vol" if is_buy else "sell_vol"] += _midpoint(t)
@@ -167,10 +168,22 @@ def compute(days: int = 30, top: int = 40) -> dict:
             wk = (wd - dt.timedelta(days=wd.weekday())).isoformat()
             w = weekly.setdefault(wk, {"week": wk, "buys": 0, "sells": 0})
             w["buys" if is_buy else "sells"] += 1
+            try:
+                lag = (dt.date.fromisoformat(t["filing_date"]) - wd).days
+                if lag >= 0:
+                    m["lags"].append(lag)
+            except Exception:
+                pass
 
     member_rows = []
     for m in members.values():
         pinfo = party(m["member"])
+        crets = [r for r in m["crets"] if r is not None]
+        copy_return = _avg(m["crets"])
+        win_rate = round(sum(1 for r in crets if r > 0) / len(crets) * 100) if crets else None
+        avg_lag = round(sum(m["lags"]) / len(m["lags"]), 1) if m["lags"] else None
+        score, _ = _member_score(copy_return, (win_rate / 100) if win_rate is not None else None,
+                                 avg_lag, len(crets))
         member_rows.append({
             "member": m["member"], "chamber": m["chamber"],
             "party": pinfo["party"], "state": pinfo.get("state"),
@@ -179,7 +192,8 @@ def compute(days: int = 30, top: int = 40) -> dict:
             "tickers": len(m["tickers"]),
             "top_sector": (m["sectors"].most_common(1) or [("", 0)])[0][0],
             "est_return": _avg(m["rets"]), "return_samples": len([r for r in m["rets"] if r is not None]),
-            "copy_return": _avg(m["crets"]), "copy_samples": len([r for r in m["crets"] if r is not None]),
+            "copy_return": copy_return, "copy_samples": len(crets),
+            "win_rate": win_rate, "avg_lag": avg_lag, "score": score,
         })
 
     # sector momentum (trends)
@@ -204,11 +218,24 @@ def compute(days: int = 30, top: int = 40) -> dict:
     # "copyable" = return since the filing became public (what you could realistically
     # have made mirroring the trade AFTER disclosure, not at the member's own price).
     copy_leaders = sorted([m for m in member_rows if m["copy_samples"] >= 5
-                           and m["copy_return"] is not None],
-                          key=lambda m: m["copy_return"], reverse=True)[:8]
+                           and m["score"] is not None],
+                          key=lambda m: m["score"], reverse=True)[:10]
     top_trades = sorted([t for t in trades_out if t["action"] == "purchase"
                          and t["cret"] is not None],
                         key=lambda t: t["cret"], reverse=True)[:12]
+
+    # Congress vs the market (S&P 500) + sector performance
+    buys_all = [t for t in stock if t["action"] == "purchase"]
+    market = _market_insights(buys_all, days)
+    sec_ret: dict[str, list] = {}
+    for t in buys_all:
+        cr = cret(t)
+        if cr is not None:
+            sec_ret.setdefault(enriched.get(t["ticker"], {}).get("sector") or "Other", []).append(cr)
+    sector_returns = sorted(({"sector": s, "avg_return": _avg(v), "buys": len(v)}
+                             for s, v in sec_ret.items()),
+                            key=lambda x: (x["avg_return"] if x["avg_return"] is not None else -999),
+                            reverse=True)
     by_party: dict[str, dict] = {}
     for m in member_rows:
         p = m["party"] if m["party"] in ("D", "R", "I") else "Other"
@@ -222,7 +249,8 @@ def compute(days: int = 30, top: int = 40) -> dict:
                    "sells": d["sells"], "avg_copy_return": _avg(d["rets"])}
                   for d in by_party.values() if d["party"] in ("D", "R", "I")]
     party_rows.sort(key=lambda d: d["members"], reverse=True)
-    insights = {"copy_leaders": copy_leaders, "top_trades": top_trades, "by_party": party_rows}
+    insights = {"copy_leaders": copy_leaders, "top_trades": top_trades, "by_party": party_rows,
+                "market": market, "sector_returns": sector_returns, "most_bought": buys[:15]}
 
     return {
         "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -270,6 +298,61 @@ def ticker_detail(ticker: str, date: str | None) -> dict:
     move = cw_prices.biggest_move(ticker, date)
     return {"ticker": ticker.upper(), "profile": profile, "price": price,
             "news": news, "biggest_move": move}
+
+
+def _market_insights(buys, days) -> dict | None:
+    """Equity curve: $1,000 into each stock the moment Congress's buy became public,
+    vs the SAME cash flows into the S&P 500 (SPY). Historical fact, not a prediction."""
+    invest = 1000.0
+    today = dt.date.today()
+    start = today - dt.timedelta(days=days)
+    step = max(1, days // 24)
+    pts, d = [], start
+    while d < today:
+        pts.append(d)
+        d += dt.timedelta(days=step)
+    pts.append(today)
+
+    by_ticker: dict[str, list] = {}
+    for t in buys:
+        try:
+            by_ticker.setdefault(t["ticker"], []).append(dt.date.fromisoformat(t["filing_date"]))
+        except Exception:
+            pass
+    spy_at = {p: cw_prices.price_on("SPY", p.isoformat()) for p in pts}
+    congress = [0.0] * len(pts)
+    market = [0.0] * len(pts)
+    invested = [0.0] * len(pts)
+    for ticker, fds in by_ticker.items():
+        tl = [cw_prices.price_on(ticker, p.isoformat()) for p in pts]
+        for fd in fds:
+            pf = cw_prices.price_on(ticker, fd.isoformat())
+            spf = cw_prices.price_on("SPY", fd.isoformat())
+            if not pf or not spf:
+                continue
+            for i, p in enumerate(pts):
+                if p < fd:
+                    continue
+                invested[i] += invest
+                if tl[i]:
+                    congress[i] += invest * (tl[i] / pf)
+                if spy_at[p]:
+                    market[i] += invest * (spy_at[p] / spf)
+    curve = [{"date": pts[i].isoformat(), "congress": round(congress[i]),
+              "market": round(market[i]), "invested": round(invested[i])}
+             for i in range(len(pts)) if invested[i] > 0]
+    if not curve:
+        return None
+    inv, cval, mval = invested[-1], congress[-1], market[-1]
+    cret = (cval - inv) / inv * 100 if inv else None
+    mret = (mval - inv) / inv * 100 if inv else None
+    ann = round(((cval / inv) ** (365.0 / days) - 1) * 100, 1) if (inv and cval > 0) else None
+    return {"curve": curve, "invested": round(inv), "per_buy": int(invest),
+            "congress_value": round(cval), "market_value": round(mval),
+            "congress_return": round(cret, 1) if cret is not None else None,
+            "market_return": round(mret, 1) if mret is not None else None,
+            "alpha": round(cret - mret, 1) if (cret is not None and mret is not None) else None,
+            "annualized": ann}
 
 
 def _clamp(x):

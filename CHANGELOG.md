@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.8
+- **Buys & Sells now match All trades** — full per-transaction detail (dates, amounts, party, member, returns), all sortable.
+- **Insights, rebuilt** — a "Would copying Congress beat the market?" panel with an **equity-curve chart** ($1k into every disclosed buy vs the same cash in the S&P 500), an **alpha** verdict, a hypothetical projection, **sector performance** (how Congress's buys did by sector), a **who-to-copy** board ranked by Copy Score, biggest copyable winners, and the most-bought tickers.
+- **Members** tab gains a sortable **Copy Score**, win-rate, and reporting-lag column.
+- **Hover a member's name** for a quick card (party, score, buys/sells, return, win rate, lag) — like the ticker card. Fixed: the stock card no longer appears over member names.
+
 ## 1.0.7
 - **Rich member profiles:** click any member (in Members or All-trades) for a full profile — bio (party, state, years in Congress), a **Copy Score /100** with a transparent factor breakdown (performance, consistency, reporting speed, track-record size), avg return since their trades go public, win rate, average reporting lag, net flow, buying-by-sector, and each position's entry → current price.
 - **Fixed:** hovering a member's name no longer shows the stock tooltip; the ticker card now only appears over an actual ticker. Member names are clickable.
