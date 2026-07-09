@@ -272,22 +272,57 @@ def ticker_detail(ticker: str, date: str | None) -> dict:
             "news": news, "biggest_move": move}
 
 
+def _clamp(x):
+    return max(0.0, min(100.0, x))
+
+
+def _member_score(avg_copy, win_rate, avg_lag, n):
+    """Heuristic 0-100 "copy confidence" + its factor breakdown.
+
+    A transparent blend of: performance (return since the trade went public),
+    consistency (share of buys that are up), reporting speed (shorter lag = you can
+    act sooner), and sample size (more disclosed buys = more trustworthy). Returns
+    (None, {}) when there isn't enough history to score fairly.
+    """
+    if n < 3 or avg_copy is None:
+        return None, {}
+    perf = _clamp(50 + avg_copy * 2)                       # +25% -> 100, -25% -> 0
+    consistency = _clamp((win_rate or 0) * 100)
+    speed = _clamp(100 - (avg_lag if avg_lag is not None else 45) * 1.8)  # 0d->100, ~55d->0
+    sample = _clamp(30 + n * 3.5)                          # ~20 buys -> 100
+    score = round(0.40 * perf + 0.25 * consistency + 0.15 * speed + 0.20 * sample)
+    return score, {"performance": round(perf), "consistency": round(consistency),
+                   "speed": round(speed), "sample": round(sample)}
+
+
 def member_detail(name: str, chamber: str, days: int) -> dict:
     trades = [t for t in cw_congress.get_congress_trades(days=days, chamber="all")
               if t["member"] == name and t["asset_code"] in STOCK]
     pos: dict[str, dict] = {}
+    lags: list[int] = []
+    sector_buy: dict[str, float] = {}
     for t in trades:
         p = pos.setdefault(t["ticker"], {"ticker": t["ticker"], "buys": 0, "sells": 0,
                                          "buy_usd": 0, "sell_usd": 0, "last": t["txn_date"]})
+        mid = _midpoint(t)
         if t["action"] == "purchase":
             p["buys"] += 1
-            p["buy_usd"] += _midpoint(t)
+            p["buy_usd"] += mid
+            sec = cw_meta.get_sector_industry(t["ticker"])["sector"]
+            sector_buy[sec] = sector_buy.get(sec, 0) + mid
         elif t["action"] == "sale":
             p["sells"] += 1
-            p["sell_usd"] += _midpoint(t)
+            p["sell_usd"] += mid
         d = _iso(t["txn_date"])
         if d and (d > (_iso(p["last"]) or "")):
             p["last"] = t["txn_date"]
+        try:
+            lag = (dt.date.fromisoformat(t["filing_date"]) - dt.date.fromisoformat(d)).days
+            if lag >= 0:
+                lags.append(lag)
+        except Exception:
+            pass
+
     rows = []
     for p in pos.values():
         r = cw_prices.return_since(p["ticker"], _iso(p["last"]))
@@ -295,15 +330,51 @@ def member_detail(name: str, chamber: str, days: int) -> dict:
         rows.append({**p, "company": cw_meta._ticker_title(p["ticker"]),
                      "sector": cw_meta.get_sector_industry(p["ticker"])["sector"],
                      "net": net, "net_usd": round(p["buy_usd"] - p["sell_usd"]),
-                     "price": r["price"], "return_since_pct": r["return_since_pct"]})
+                     "price": r["price"], "price_on_date": r["price_on_date"],
+                     "return_since_pct": r["return_since_pct"]})
     rows.sort(key=lambda r: abs(r["net_usd"]), reverse=True)
-    buy_rets = [cw_prices.return_since(p["ticker"], _iso(p["last"]))["return_since_pct"]
-                for p in pos.values() if p["buys"] > p["sells"]]
+
+    copy_rets, est_rets, wins, ntot = [], [], 0, 0
+    for t in trades:
+        if t["action"] != "purchase":
+            continue
+        cr = cw_prices.return_since(t["ticker"], t["filing_date"])["return_since_pct"]
+        er = cw_prices.return_since(t["ticker"], _iso(t["txn_date"]))["return_since_pct"]
+        if cr is not None:
+            copy_rets.append(cr)
+            ntot += 1
+            wins += 1 if cr > 0 else 0
+        if er is not None:
+            est_rets.append(er)
+    avg_copy, avg_est = _avg(copy_rets), _avg(est_rets)
+    win_rate = (wins / ntot) if ntot else None
+    avg_lag = round(sum(lags) / len(lags), 1) if lags else None
+    buy_vol = sum(p["buy_usd"] for p in pos.values())
+    sell_vol = sum(p["sell_usd"] for p in pos.values())
+    sectors = sorted(({"sector": s, "usd": round(v)} for s, v in sector_buy.items()),
+                     key=lambda x: x["usd"], reverse=True)
+    score, factors = _member_score(avg_copy, win_rate, avg_lag, ntot)
+
     pinfo = cw_members.lookup(name)
-    return {"member": name, "chamber": chamber, "party": pinfo["party"], "state": pinfo.get("state"),
-            "window_days": days, "positions": rows, "est_return": _avg(buy_rets),
-            "totals": {"tickers": len(rows), "buys": sum(p["buys"] for p in pos.values()),
-                       "sells": sum(p["sells"] for p in pos.values())}}
+    years = None
+    try:
+        if pinfo.get("since"):
+            years = dt.date.today().year - int(pinfo["since"])
+    except Exception:
+        pass
+
+    return {
+        "member": name, "chamber": chamber, "party": pinfo["party"], "state": pinfo.get("state"),
+        "since": pinfo.get("since"), "years": years, "window_days": days,
+        "positions": rows, "sectors": sectors, "score": score, "score_factors": factors,
+        "stats": {"buys": sum(p["buys"] for p in pos.values()),
+                  "sells": sum(p["sells"] for p in pos.values()), "tickers": len(rows),
+                  "buy_vol": round(buy_vol), "sell_vol": round(sell_vol),
+                  "net_flow": round(buy_vol - sell_vol), "avg_copy_return": avg_copy,
+                  "avg_trade_return": avg_est,
+                  "win_rate": round(win_rate * 100) if win_rate is not None else None,
+                  "avg_report_lag_days": avg_lag, "return_samples": ntot},
+    }
 
 
 # --------------------------------------------------------------------------- cache/http

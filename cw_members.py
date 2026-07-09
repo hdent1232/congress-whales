@@ -45,8 +45,10 @@ def _load() -> None:
             if not terms:
                 continue
             t = terms[-1]
+            starts = [tm.get("start", "") for tm in terms if tm.get("start")]
+            since = min(starts)[:4] if starts else None
             info = {"party": _PARTY.get(t.get("party"), t.get("party") or "?"),
-                    "state": t.get("state"), "chamber": t.get("type")}
+                    "state": t.get("state"), "chamber": t.get("type"), "since": since}
             nm = p.get("name", {})
             first = nm.get("first") or ""
             lastn = nm.get("last") or ""
@@ -71,7 +73,7 @@ def lookup(name: str) -> dict:
         _load()
     toks = _tokens(name)
     if not toks:
-        return {"party": "?", "state": None, "chamber": None}
+        return {"party": "?", "state": None, "chamber": None, "since": None}
     # try first+last
     fk = f"{toks[0]} {toks[-1]}"
     if fk in _by_fullname:
@@ -84,4 +86,4 @@ def lookup(name: str) -> dict:
     cand = _by_lastname.get(toks[-1], [])
     if len(cand) == 1:
         return cand[0]
-    return {"party": "?", "state": None, "chamber": None}
+    return {"party": "?", "state": None, "chamber": None, "since": None}

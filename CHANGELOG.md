@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.7
+- **Rich member profiles:** click any member (in Members or All-trades) for a full profile — bio (party, state, years in Congress), a **Copy Score /100** with a transparent factor breakdown (performance, consistency, reporting speed, track-record size), avg return since their trades go public, win rate, average reporting lag, net flow, buying-by-sector, and each position's entry → current price.
+- **Fixed:** hovering a member's name no longer shows the stock tooltip; the ticker card now only appears over an actual ticker. Member names are clickable.
+
 ## 1.0.6
 - **Android fix:** the app no longer hangs on "loading." It now ships with a starter snapshot so it opens instantly with real data, then refreshes live.
 - **Resilience:** a single blocked/slow data source (e.g. an SEC 403) can no longer blank the whole dashboard — it degrades gracefully and keeps showing data.

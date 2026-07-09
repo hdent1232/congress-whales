@@ -69,6 +69,18 @@
   .dwh{padding:15px 16px 11px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel2)}
   .dwh .x{float:right;cursor:pointer;color:var(--mut);font-size:19px}.dwb{padding:13px 16px}
   .callout{background:#12202e;border:1px solid #24384a;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:12px}
+  .mem{border-bottom:1px dotted #40506a;cursor:pointer}
+  .scorebox{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .scorenum{font-size:38px;font-weight:800;line-height:1;min-width:74px;text-align:center}
+  .scorenum small{display:block;font-size:10px;font-weight:600;color:var(--mut);letter-spacing:.5px;margin-top:3px}
+  .sgood{color:var(--grn)}.smid{color:var(--amber)}.slow{color:var(--red)}
+  .fbar{display:grid;grid-template-columns:78px 1fr 34px;align-items:center;gap:7px;font-size:11px;margin:3px 0}
+  .fbar .track{height:7px;background:#0d1520;border-radius:4px;overflow:hidden}
+  .fbar .fill{height:100%;background:var(--acc);border-radius:4px}
+  .mstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .mstat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .mstat .l{color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+  .mstat .v{font-size:17px;font-weight:700;margin-top:2px}
   .news{border-left:2px solid var(--line);padding:5px 0 5px 11px;margin-bottom:10px}
   .news a{color:var(--txt);text-decoration:none}.news a:hover{color:var(--acc)}.news .m{font-size:10px;color:var(--mut);margin-top:2px}
   .before{border-left-color:var(--amber)}.after{border-left-color:var(--acc)}
@@ -152,8 +164,8 @@ function showTip(tk,x,y){const p=PROF[tk];if(!p){tip.style.display='none';return
     (p.summary?'<div class="tsum">'+esc(p.summary.slice(0,220))+'…</div>':'');
   tip.style.display='block';const w=tip.offsetWidth,h=tip.offsetHeight;
   tip.style.left=Math.min(x+14,innerWidth-w-8)+'px';tip.style.top=Math.min(y+14,innerHeight-h-8)+'px';}
-document.addEventListener('mousemove',e=>{const el=e.target.closest('[data-tk]');
-  if(el)showTip(el.getAttribute('data-tk'),e.clientX,e.clientY);else tip.style.display='none';});
+document.addEventListener('mousemove',e=>{const el=e.target.closest('.tk');
+  if(el)showTip((el.getAttribute('data-tk')||el.textContent||'').trim(),e.clientX,e.clientY);else tip.style.display='none';});
 
 const kpi=(l,v,s)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';
 
@@ -253,7 +265,7 @@ function buildTrades(d){
     {key:'filing_date',label:'Filed',render:r=>'<span class="mut">'+esc(r.filing_date)+'</span>',val:r=>r.filing_date},
     {key:'txn',label:'Traded',render:r=>'<span class="mut">'+esc(r.txn_date)+'</span>',val:r=>dISO(r.txn_date)},
     {key:'chamber',label:'Ch.',render:r=>'<span class="mut">'+esc((r.chamber||'')[0])+'</span>',val:r=>r.chamber},
-    {key:'member',label:'Member',render:r=>esc(r.member),val:r=>r.member},
+    {key:'member',label:'Member',render:r=>'<span class="mem" data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'">'+esc(r.member)+'</span>',val:r=>r.member},
     {key:'party',label:'Party',render:r=>pbadge(r.party),val:r=>r.party},
     {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
     {key:'sector',label:'Sector',render:r=>'<span class="sec">'+esc(r.sector)+'</span>',val:r=>r.sector},
@@ -294,7 +306,7 @@ function buildInsights(d){
   h+='<div class="panel"><h2>💡 Biggest copyable winners <span class="tag">single disclosed buys</span></h2><div id="ins-top" class="host"></div></div></div>';
   $('#tab-insights').innerHTML=h;
   makeTable($('#ins-copy'),[
-    {key:'member',label:'Member',render:r=>esc(r.member),val:r=>r.member},
+    {key:'member',label:'Member',render:r=>'<span class="mem" data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'">'+esc(r.member)+'</span>',val:r=>r.member},
     {key:'party',label:'Party',render:r=>pbadge(r.party),val:r=>r.party},
     {key:'buys',label:'Buys',num:true,render:r=>r.copy_samples,val:r=>r.copy_samples},
     {key:'copy',label:'Copy return',num:true,render:r=>ret(r.copy_return),val:r=>r.copy_return},
@@ -345,21 +357,51 @@ async function openTicker(tk,date){
       '<div class="foot">Price move from daily history; headlines via Google News aligned to the trade date (amber=before, teal=after). Not curated data.</div></div>';
   }catch(e){$('#drawer').innerHTML+='<div class="dwb red">error: '+e+'</div>';}
 }
+const winLabel=d=>({7:'7d',14:'14d',30:'30d',45:'45d',90:'90d',180:'180d',365:'1y',730:'2y'})[d]||d+'d';
 async function openMember(name,ch){
   $('#scrim').classList.add('open');$('#drawer').classList.add('open');
-  $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span><div class="tk" style="font-size:17px">'+esc(name)+'</div><div class="mut"><span class="spin">↻</span> building portfolio…</div></div>';
+  $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span><div class="tk" style="font-size:17px">'+esc(name)+'</div><div class="mut"><span class="spin">↻</span> building profile…</div></div>';
   try{const d=await(await fetch('/api/member?name='+encodeURIComponent(name)+'&chamber='+encodeURIComponent(ch)+'&days='+$('#days').value)).json();
+    const s=d.stats||{}, win=winLabel(d.window_days);
+    const cham=d.chamber==='House'?'U.S. House':d.chamber==='Senate'?'U.S. Senate':esc(d.chamber||'');
+    const bio=cham+(d.state?' · '+esc(d.state):'')+(d.years?' · '+d.years+' yrs in Congress (since '+esc(d.since)+')':'');
+    // score box
+    const sc=d.score, scls=sc==null?'mut':sc>=70?'sgood':sc>=50?'smid':'slow';
+    const flabel={performance:'Performance',consistency:'Consistency',speed:'Report speed',sample:'Track record'};
+    const factors=d.score_factors||{};
+    const fbars=Object.keys(flabel).map(k=>factors[k]==null?'':
+      '<div class="fbar"><span class="mut">'+flabel[k]+'</span><div class="track"><div class="fill" style="width:'+factors[k]+'%"></div></div><span>'+factors[k]+'</span></div>').join('');
+    const scoreBox=sc==null
+      ? '<div class="scorebox"><div class="mut" style="font-size:12px">Not enough disclosed buys in this window to score a copy-confidence rating (need ≥3 with price history). Try a longer window.</div></div>'
+      : '<div class="scorebox"><div class="scorenum '+scls+'">'+sc+'<small>COPY SCORE</small></div><div style="flex:1">'+fbars+'</div></div>';
+    // stat tiles
+    const stat=(l,v)=>'<div class="mstat"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>';
+    const statsGrid='<div class="mstats">'+
+      stat('Avg return since public ('+win+')',ret(s.avg_copy_return))+
+      stat('Win rate',(s.win_rate==null?'<span class="mut">—</span>':s.win_rate+'%')+' <span class="mut" style="font-size:11px">of '+(s.return_samples||0)+' buys')+
+      stat('Avg return since their trade',ret(s.avg_trade_return))+
+      stat('Avg reporting lag',(s.avg_report_lag_days==null?'<span class="mut">—</span>':s.avg_report_lag_days+' days'))+
+      stat('Net $ flow ('+win+')','<span class="'+((s.net_flow||0)>=0?'grn':'red')+'">'+money(s.net_flow)+'</span>')+
+      stat('Disclosed buying','<span class="grn">'+money(s.buy_vol)+'</span> <span class="mut" style="font-size:11px">'+s.buys+' buys / '+s.sells+' sells')+
+      '</div>';
+    // sector breakdown
+    const secs=d.sectors||[],smax=Math.max(1,...secs.map(x=>x.usd));
+    const secHtml=secs.length?'<h2 style="font-size:12px;margin:14px 0 8px">Buying by sector ('+win+')</h2>'+
+      secs.slice(0,7).map(x=>'<div class="fbar" style="grid-template-columns:110px 1fr 54px"><span>'+esc(x.sector)+'</span><div class="track"><div class="fill" style="width:'+(x.usd/smax*100)+'%;background:var(--grn2)"></div></div><span class="mut">'+money(x.usd)+'</span></div>').join(''):'';
     $('#drawer').innerHTML='<div class="dwh"><span class="x" onclick="closeDrawer()">✕</span>'+
-      '<div class="tk" style="font-size:17px">'+esc(name)+' '+pbadge(d.party)+' <span class="mut" style="font-size:12px;font-weight:400">'+esc(ch)+(d.state?' · '+esc(d.state):'')+'</span></div>'+
-      '<div class="mut" style="margin-top:6px;font-size:12px">'+d.totals.tickers+' tickers · '+d.totals.buys+' buys · '+d.totals.sells+' sells · est. return '+(d.est_return==null?'—':(d.est_return>=0?'+':'')+d.est_return+'%')+'</div></div>'+
-      '<div class="dwb"><div class="note" style="margin:-13px -16px 12px;border-radius:0">Disclosed <b>trading activity</b> for this window, not a verified live portfolio. "Accumulating/Reducing" = buys vs sells in the window; share counts &amp; cost basis aren\'t disclosed (only ranges).</div><div id="mpos"></div></div>';
+      '<div class="tk" style="font-size:17px">'+esc(name)+' '+pbadge(d.party)+'</div>'+
+      '<div class="mut" style="margin-top:4px;font-size:12px">'+bio+'</div></div>'+
+      '<div class="dwb">'+scoreBox+statsGrid+secHtml+
+      '<h2 style="font-size:12px;margin:14px 0 8px">Positions <span class="mut" style="font-weight:400">— entry → now</span></h2><div id="mpos"></div>'+
+      '<div class="foot">Copy score is a heuristic blend of performance, consistency, reporting speed &amp; track-record size — <b>an idea, not advice.</b> '+
+      'Built from disclosed transactions (dollar ranges, no share counts), so figures are estimates; past results don\'t predict the future.</div></div>';
     makeTable($('#mpos'),[
       {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
       {key:'net',label:'Activity',render:r=>'<span class="'+(r.net==='Accumulating'?'buy':r.net==='Reducing'?'sell':'mut')+'">'+esc(r.net)+'</span>',val:r=>r.net},
-      {key:'trades',label:'Trades',num:true,render:r=>'<span class="mut">'+r.buys+'B/'+r.sells+'S</span>',val:r=>r.buys+r.sells},
-      {key:'net_usd',label:'Net $',num:true,render:r=>'<span class="mut">'+money(r.net_usd)+'</span>',val:r=>r.net_usd},
-      {key:'price',label:'Price',num:true,render:r=>px(r.price),val:r=>r.price},
-      {key:'ret',label:'Ret.since',num:true,render:r=>ret(r.return_since_pct),val:r=>r.return_since_pct},
+      {key:'trades',label:'B/S',num:true,render:r=>'<span class="mut">'+r.buys+'/'+r.sells+'</span>',val:r=>r.buys+r.sells},
+      {key:'entry',label:'Entry',num:true,render:r=>px(r.price_on_date),val:r=>r.price_on_date},
+      {key:'price',label:'Now',num:true,render:r=>px(r.price),val:r=>r.price},
+      {key:'ret',label:'Ret.',num:true,render:r=>ret(r.return_since_pct),val:r=>r.return_since_pct},
     ],d.positions,{sortKey:'net_usd',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date="'+dISO(r.last)+'"'});
   }catch(e){$('#drawer').innerHTML+='<div class="dwb red">error: '+e+'</div>';}
 }
