@@ -27,7 +27,9 @@ def _history(ticker: str) -> dict:
         return _hist_cache[tk]
     out = {"price": None, "currency": None, "series": []}
     try:
-        j = fetch_json(_YF.format(sym=_yahoo_symbol(tk)), ttl=1800, headers=_BROWSER_UA)
+        # 3h disk cache: prices are reused across app restarts (returns don't need to
+        # be intraday-fresh), so re-opening the app doesn't re-download every ticker.
+        j = fetch_json(_YF.format(sym=_yahoo_symbol(tk)), ttl=10800, headers=_BROWSER_UA)
         res = j["chart"]["result"][0]
         meta = res["meta"]
         p = meta.get("regularMarketPrice")

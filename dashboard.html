@@ -348,20 +348,20 @@ function buildInsights(d){
     {key:'score',label:'Score',num:true,render:r=>scoreCell(r.score),val:r=>r.score},
     {key:'copy',label:'Return',num:true,render:r=>ret(r.copy_return),val:r=>r.copy_return},
     {key:'win',label:'Win%',num:true,render:r=>r.win_rate==null?'—':r.win_rate+'%',val:r=>r.win_rate},
-  ],ins.copy_leaders,{sortKey:'score',rowAttrs:r=>'data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'"'});
+  ],ins.copy_leaders||[],{sortKey:'score',rowAttrs:r=>'data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'"'});
   makeTable($('#ins-top'),[
     {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
     {key:'member',label:'Member',render:r=>pbadge(r.party)+' <span class="mem" data-mem="'+esc(r.member)+'" data-ch="'+esc(r.chamber)+'">'+esc(r.member)+'</span>',val:r=>r.member},
     {key:'cret',label:'Since public',num:true,render:r=>ret(r.cret),val:r=>r.cret},
     {key:'ret',label:'Since trade',num:true,render:r=>ret(r.ret),val:r=>r.ret},
-  ],ins.top_trades,{sortKey:'cret',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date="'+dISO(r.txn_date)+'"'});
+  ],ins.top_trades||[],{sortKey:'cret',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date="'+dISO(r.txn_date)+'"'});
   makeTable($('#ins-most'),[
     {key:'ticker',label:'Ticker',render:r=>'<span class="tk">'+esc(r.ticker)+'</span>',val:r=>r.ticker},
     {key:'sector',label:'Sector',render:r=>'<span class="sec">'+esc(r.sector||'—')+'</span>',val:r=>r.sector},
     {key:'members',label:'Members',num:true,render:r=>'<span class="grn">'+r.distinct_members+'</span>',val:r=>r.distinct_members},
     {key:'price',label:'Price',num:true,render:r=>px(r.price),val:r=>r.price},
     {key:'ret',label:'Ret.',num:true,render:r=>ret(r.return_since_pct),val:r=>r.return_since_pct},
-  ],ins.most_bought,{sortKey:'members',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date=""'});
+  ],ins.most_bought||[],{sortKey:'members',rowAttrs:r=>'data-tk="'+esc(r.ticker)+'" data-date=""'});
 }
 
 /* OVERLAP */
@@ -509,7 +509,12 @@ async function checkVersion(){
       a.href=v.url;a.textContent='⬆ Update to v'+v.latest;}
   }catch(e){$('#ver').textContent='v?';}
 }
+const STALE_MS=10*60*1000;
+const isStale=()=>!DATA||!DATA.generated_at||(Date.now()-new Date(DATA.generated_at).getTime())>STALE_MS;
 (async function(){await load(false);load(true);checkVersion();})();
-$('#refresh').onclick=()=>load(true);$('#days').onchange=()=>load(false);
+$('#refresh').onclick=()=>load(true);
+// Switching windows shows the cached snapshot instantly, then auto-refreshes to live
+// data if that snapshot is stale — no need to press Refresh.
+$('#days').onchange=async()=>{await load(false);if(isStale())load(true);};
 </script>
 </body></html>

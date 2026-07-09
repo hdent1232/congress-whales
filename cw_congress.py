@@ -15,6 +15,8 @@ from __future__ import annotations
 import datetime as dt
 import http.cookiejar
 import io
+import json
+import os
 import re
 import urllib.parse
 import urllib.request
@@ -24,7 +26,36 @@ from concurrent.futures import ThreadPoolExecutor
 
 from pypdf import PdfReader
 
-from cw_http import UA, fetch
+from cw_http import CACHE_DIR, UA, fetch
+
+# ---------------------------------------------------------------------------
+# Parsed-trade store — each filing (House DocID / Senate UUID) is fetched and
+# parsed exactly ONCE, ever, then kept on disk. A refresh only pulls the handful
+# of filings we haven't seen before, instead of re-downloading and re-parsing the
+# whole window every time.
+# ---------------------------------------------------------------------------
+
+def _store_path(name: str) -> str:
+    return os.path.join(CACHE_DIR, f"parsed_{name}.json")
+
+
+def _load_store(name: str) -> dict:
+    try:
+        with open(_store_path(name), encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def _save_store(name: str, store: dict) -> None:
+    try:
+        tmp = _store_path(name) + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(store, fh)
+        os.replace(tmp, _store_path(name))
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -131,20 +162,30 @@ def get_house_trades(days: int = 7, max_filings: int = 1500) -> list[dict]:
     filings.sort(key=lambda f: f["filing_date"], reverse=True)
     filings = filings[:max_filings]
 
-    def fetch_one(f):
-        try:
-            raw = fetch(_HOUSE_PDF.format(y=f["year"], doc=f["doc_id"]),
-                        ttl=86400, binary=True)
-        except Exception:
-            return []  # paper filing / missing PDF
-        return [{**t, "chamber": "House", "member": f["member"], "state": f["state"],
-                 "filing_date": f["filing_date"].isoformat(), "doc_id": f["doc_id"]}
-                for t in _parse_house_pdf(raw)]
+    store = _load_store("house")  # {doc_id: [bare trade dicts]}
+    missing = [f for f in filings if f["doc_id"] not in store]
+    if missing:
+        def fetch_one(f):
+            try:
+                raw = fetch(_HOUSE_PDF.format(y=f["year"], doc=f["doc_id"]),
+                            ttl=86400, binary=True)
+            except Exception:
+                return f["doc_id"], None  # transient/missing -> don't cache, retry later
+            try:
+                return f["doc_id"], _parse_house_pdf(raw)
+            except Exception:
+                return f["doc_id"], []  # unreadable/paper -> cache empty so we skip it next time
+        with ThreadPoolExecutor(max_workers=10) as ex:
+            for doc_id, bare in ex.map(fetch_one, missing):
+                if bare is not None:
+                    store[doc_id] = bare
+        _save_store("house", store)
 
     trades = []
-    with ThreadPoolExecutor(max_workers=10) as ex:
-        for res in ex.map(fetch_one, filings):
-            trades.extend(res)
+    for f in filings:
+        for t in store.get(f["doc_id"], []):
+            trades.append({**t, "chamber": "House", "member": f["member"], "state": f["state"],
+                           "filing_date": f["filing_date"].isoformat(), "doc_id": f["doc_id"]})
     return trades
 
 
@@ -232,19 +273,25 @@ def get_senate_trades(days: int = 7, max_filings: int = 1500) -> list[dict]:
     filings.sort(key=lambda f: f["filing_date"], reverse=True)
     filings = filings[:max_filings]
 
-    def fetch_one(f):
-        try:
-            ts = _senate_trades_from(f["url"], cookie)
-        except Exception:
-            return []
-        return [{**t, "chamber": "Senate", "member": f["member"], "state": "",
-                 "filing_date": f["filing_date"].isoformat(), "doc_id": f["doc_id"]}
-                for t in ts]
+    store = _load_store("senate")  # {uuid: [bare trade dicts]}
+    missing = [f for f in filings if f["doc_id"] not in store]
+    if missing:
+        def fetch_one(f):
+            try:
+                return f["doc_id"], _senate_trades_from(f["url"], cookie)
+            except Exception:
+                return f["doc_id"], None
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for doc_id, bare in ex.map(fetch_one, missing):
+                if bare is not None:
+                    store[doc_id] = bare
+        _save_store("senate", store)
 
     trades = []
-    with ThreadPoolExecutor(max_workers=6) as ex:
-        for res in ex.map(fetch_one, filings):
-            trades.extend(res)
+    for f in filings:
+        for t in store.get(f["doc_id"], []):
+            trades.append({**t, "chamber": "Senate", "member": f["member"], "state": "",
+                           "filing_date": f["filing_date"].isoformat(), "doc_id": f["doc_id"]})
     return trades
 
 

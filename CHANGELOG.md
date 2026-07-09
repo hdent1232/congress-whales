@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.9
+- **Auto-refresh:** switching the time window now updates automatically — no need to press Refresh. It shows the last snapshot instantly, then pulls live data if it's stale.
+- **Much faster syncing:** each disclosure is now downloaded and parsed only once, ever. A refresh only fetches the *new* filings since last time instead of re-processing the whole window (a cold sync that took ~5–70s now takes ~1s once warm).
+
 ## 1.0.8
 - **Buys & Sells now match All trades** — full per-transaction detail (dates, amounts, party, member, returns), all sortable.
 - **Insights, rebuilt** — a "Would copying Congress beat the market?" panel with an **equity-curve chart** ($1k into every disclosed buy vs the same cash in the S&P 500), an **alpha** verdict, a hypothetical projection, **sector performance** (how Congress's buys did by sector), a **who-to-copy** board ranked by Copy Score, biggest copyable winners, and the most-bought tickers.

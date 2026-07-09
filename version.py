@@ -1,6 +1,6 @@
 """Single source of truth for the app version and update/repo coordinates."""
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 # GitHub repo used for the auto-update check and release downloads.
 GITHUB_OWNER = "hdent1232"
